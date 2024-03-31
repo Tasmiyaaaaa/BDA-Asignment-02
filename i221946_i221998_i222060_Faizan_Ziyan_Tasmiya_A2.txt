@@ -1,0 +1,213 @@
+# Importing required Libraries
+
+import csv
+
+import nltk as nlp
+
+from nltk.corpus import stopwords
+
+import string
+
+from collections import Counter
+
+import numpy as np
+
+# Reading Data
+
+csv_file_path = "enwiki-20170820.csv"
+
+data = {}
+
+i = 0
+
+with open(csv_file_path, mode='r') as file:
+
+    csv_reader = csv.reader(file)
+
+    for row in csv_reader:
+        
+        data[row[0]] = row[3].strip()
+
+        i += 1
+    
+        if (i == 20000):
+            
+            break
+
+Cleaning Data and Making Vocabulary
+           
+punctuations = []
+
+punctuation = string.punctuation
+
+for w in punctuation:
+    
+    punctuations.append(w)
+    
+punctuations.append('\n')
+
+punctuations.append('–')
+
+punctuations.append('**')
+
+punctuations.append('\"')
+
+punctuations.append('0')
+
+punctuations.append('1')
+
+punctuations.append('2')
+
+punctuations.append('3')
+
+punctuations.append('4')
+
+punctuations.append('5')
+
+punctuations.append('6')
+
+punctuations.append('7')
+
+punctuations.append('8')
+
+punctuations.append('9')
+
+vocab = []
+
+for i in data:
+
+    data[i] = data[i].lower()
+    
+    data[i] = "".join(l for l in data[i] if l not in punctuations)
+
+    temp = data[i].split()
+    
+    if temp:
+        
+        temp = list(set(temp))
+    
+        for word in temp:
+    
+            vocab.append(word)
+
+vocab = set(vocab)
+
+vocab = sorted(vocab)
+
+# Assigning Key Values
+
+num = 0
+
+dict_words = {}
+
+for word in vocab:
+    
+    dict_words[word] = num 
+    
+    num += 1
+ 
+# Conversion to the Keys Assigned
+    
+for i in data:
+    
+    data[i] = data[i].lower()
+    
+    data[i] = "".join(l for l in data[i] if l not in punctuations)
+    
+    data[i] = data[i].split()
+    
+final_list = []
+
+for i in data:
+    
+    doc_list = []
+    
+    for word in data[i]:
+        
+        try:
+            doc_list.append(dict_words[word])
+            
+        except:
+            continue
+
+    final_list.append(doc_list)
+
+# Calculating IDF
+    
+idf = {}
+
+for i in dict_words:
+    
+    idf[dict_words[i]] = 0
+
+for i in idf:
+    
+    for j in final_list:
+        
+        if i in j:
+            
+            idf[i] += 1
+
+# Calculating TF
+           
+final_dict = {}
+
+for i, doc in enumerate(final_list):
+    
+    counts = Counter(doc)
+    
+    counts_formatted = [(num, counts[num]) for num in counts]
+     
+    final_dict[i] = counts_formatted
+
+# Defining Vectors
+    
+vectors = {}
+
+for i in final_dict:
+    
+    vectors[i] = np.zeros([len(vocab)])
+
+    for j in final_dict[i]:
+        
+        vectors[i][j[0]] = j[1]/idf[j[0]]
+
+# Processing The Query
+       
+query = 'that was at that time'
+
+query = query.strip().split()
+
+query_list = []
+
+for i in query:
+    
+    value = dict_words[i]
+    
+    query_list.append(value)
+
+count = Counter(query_list)
+
+query_formatted = [(num, count[num]) for num in count]
+
+vector = np.zeros([len(vocab)])
+
+for i in query_formatted:
+
+    vector[i[0]] = i[1]
+
+# Displaying the results
+   
+res = 0.0
+
+for i in vectors:
+    
+    for k, j in enumerate(vectors[i]):
+        
+        res += j * vector[k]
+    
+    if res > 0.1:
+        
+        print (f"Document {i} = {res}")
+        
+    res = 0
